@@ -8,10 +8,7 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.*;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -89,7 +86,7 @@ public class NioTest {
             serverSocketChannel.configureBlocking(false);//我们必须对每一个要使用的套接字通道调用这个方法，否则异步 I/O 就不能工作。
             //绑定到给定的端口 8080
             ServerSocket serverSocket = serverSocketChannel.socket();
-            InetSocketAddress inetSocketAddress = new InetSocketAddress(8080);
+            InetSocketAddress inetSocketAddress = new InetSocketAddress(8081);
             serverSocket.bind(inetSocketAddress);
 
             //第三步 选择键
@@ -109,8 +106,26 @@ public class NioTest {
             while(iterator.hasNext()){
                 //对于每一个 SelectionKey，您必须确定发生的是什么 I/O 事件，以及这个事件影响哪些 I/O 对象
                 SelectionKey selectionKey = (SelectionKey)iterator.next();
-                //deal with i.o event
+                //第五步 监听新连接
+                if ((key.readyOps() & SelectionKey.OP_ACCEPT)
+                        == SelectionKey.OP_ACCEPT) {
+
+                    System.out.println("一个新的连接");
+                    // Accept the new connection
+                    // ...
+                }
+                //第六步 接收新的连接
+                ServerSocketChannel ssc = (ServerSocketChannel)key.channel();
+                SocketChannel socketChannel = serverSocketChannel.accept();
+                //将新连接的 SocketChannel 配置为非阻塞的
+                socketChannel.configureBlocking( false );
+                //接受这个连接的目的是为了读取来自套接字的数据
+                //将SocketChannel 注册到 Selector上
+                //SocketChannel 注册用于 读取 而不是 接受 新连接
+                SelectionKey newKey = socketChannel.register( selector, SelectionKey.OP_READ );
             }
+
+
 
 
 
